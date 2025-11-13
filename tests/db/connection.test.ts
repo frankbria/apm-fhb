@@ -348,7 +348,7 @@ describe('ConnectionManager', () => {
 
     it('should handle concurrent reads', async () => {
       // Insert test data
-      await connectionManager.execute('INSERT INTO test_concurrent VALUES (1, "test")');
+      await connectionManager.execute('INSERT INTO test_concurrent VALUES (1, \'test\')');
 
       // Execute 10 concurrent reads
       const reads = Array(10).fill(null).map(() =>

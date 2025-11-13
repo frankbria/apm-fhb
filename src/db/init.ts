@@ -520,8 +520,7 @@ export async function quickSetup(
     await setupTestDatabase(connectionManager, options);
   } else {
     // Get file path from connection manager config
-    // Note: This assumes the connection manager exposes config
-    const filePath = '.apm-auto/state.db'; // Default production path
+    const filePath = connectionManager.getFilePath();
     await setupProductionDatabase(connectionManager, filePath, options);
   }
 }

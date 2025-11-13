@@ -220,10 +220,10 @@ describe('Schema Validation', () => {
       );
 
       // Delete task - should SET NULL on agent.current_task
-      await connectionManager.execute('DELETE FROM tasks WHERE id = "task1"');
+      await connectionManager.execute('DELETE FROM tasks WHERE id = \'task1\'');
 
       const agent = await connectionManager.get<{ current_task: string | null }>(
-        'SELECT current_task FROM agents WHERE id = "agent1"'
+        'SELECT current_task FROM agents WHERE id = \'agent1\''
       );
 
       expect(agent?.current_task).toBeNull();
@@ -244,10 +244,10 @@ describe('Schema Validation', () => {
       );
 
       // Delete task1 - should CASCADE delete dependency
-      await connectionManager.execute('DELETE FROM tasks WHERE id = "task1"');
+      await connectionManager.execute('DELETE FROM tasks WHERE id = \'task1\'');
 
       const deps = await connectionManager.query(
-        'SELECT * FROM task_dependencies WHERE depends_on_task_id = "task1"'
+        'SELECT * FROM task_dependencies WHERE depends_on_task_id = \'task1\''
       );
 
       expect(deps).toHaveLength(0);

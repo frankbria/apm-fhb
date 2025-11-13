@@ -315,6 +315,13 @@ export class ConnectionManager extends EventEmitter {
   }
 
   /**
+   * Get database file path from configuration
+   */
+  getFilePath(): string {
+    return this.config.filename;
+  }
+
+  /**
    * Get connection pool statistics
    */
   getPoolStats(): PoolStats {
