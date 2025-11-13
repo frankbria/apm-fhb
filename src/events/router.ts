@@ -181,6 +181,9 @@ export class MessageRouter {
    * - Broadcast: message:broadcast
    * - Type-based: message:type:{agentType}
    *
+   * IMPORTANT: Always publishes to EventBus to deliver to ALL subscribers
+   * (router-registered, SubscriptionManager-registered, and direct EventBus subscribers)
+   *
    * @param topic Topic to route to
    * @param data Message data
    * @param publisherId Publisher agent ID
@@ -190,24 +193,14 @@ export class MessageRouter {
     const startTime = Date.now();
 
     try {
-      // Get matching subscribers
+      // Get matching subscribers from router's registry (for statistics)
       const subscribers = this.getMatchingSubscribers(topic);
 
-      if (subscribers.length === 0) {
-        this.stats.noSubscribersCount++;
-        this.stats.failedRoutingAttempts++;
-        return {
-          delivered: 0,
-          failed: 1,
-          topics: [topic],
-          matchedSubscribers: 0
-        };
-      }
-
-      // Sort by priority (HIGH → NORMAL → LOW)
+      // Sort by priority (for statistics tracking)
       const sortedSubscribers = this.sortByPriority(subscribers);
 
-      // Publish to event bus
+      // ALWAYS publish to event bus - it will handle delivery to ALL subscribers
+      // (not just router-registered ones, but also SubscriptionManager and direct bus subscribers)
       const deliveredCount = await this.eventBus.publish(topic, data, publisherId);
 
       // Update statistics
@@ -215,7 +208,7 @@ export class MessageRouter {
       const topicCount = this.stats.routedPerTopic.get(topic) || 0;
       this.stats.routedPerTopic.set(topic, topicCount + 1);
 
-      // Update subscriber invocation counts
+      // Update subscriber invocation counts (only for router-registered subscribers)
       for (const subscriber of sortedSubscribers) {
         const invocations = this.stats.subscriberInvocations.get(subscriber.id) || 0;
         this.stats.subscriberInvocations.set(subscriber.id, invocations + 1);
@@ -228,11 +221,16 @@ export class MessageRouter {
         this.stats.routingTimes.shift();
       }
 
+      // Track no subscribers if EventBus also had none
+      if (deliveredCount === 0) {
+        this.stats.noSubscribersCount++;
+      }
+
       return {
         delivered: deliveredCount,
-        failed: 0,
+        failed: deliveredCount === 0 ? 1 : 0,
         topics: [topic],
-        matchedSubscribers: subscribers.length
+        matchedSubscribers: deliveredCount // Use actual delivery count from EventBus
       };
     } catch (error) {
       this.stats.failedRoutingAttempts++;

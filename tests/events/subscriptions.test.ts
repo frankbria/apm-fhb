@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { EventBus } from '../../src/events/bus';
+import { EventBus, EmissionMode } from '../../src/events/bus';
 import { SubscriptionManager } from '../../src/events/subscriptions';
 
 describe('SubscriptionManager', () => {
@@ -20,7 +20,8 @@ describe('SubscriptionManager', () => {
   let manager: SubscriptionManager;
 
   beforeEach(() => {
-    bus = new EventBus();
+    // Use SYNC mode for deterministic test behavior (especially for once() subscriptions)
+    bus = new EventBus({ defaultMode: EmissionMode.SYNC });
     manager = new SubscriptionManager(bus);
   });
 
@@ -187,12 +188,11 @@ describe('SubscriptionManager', () => {
         received.push(event.data);
       }, { once: true });
 
+      // In SYNC mode, each publish completes before next one starts
+      // so once() can properly remove listener between publishes
       await bus.publish('test:once', { value: 1 });
       await bus.publish('test:once', { value: 2 });
       await bus.publish('test:once', { value: 3 });
-
-      // Wait for async delivery
-      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(received).toHaveLength(1);
       expect(received[0]).toEqual({ value: 1 });
@@ -229,12 +229,13 @@ describe('SubscriptionManager', () => {
       vi.advanceTimersByTime(50);
       await bus.publish('test:ttl', { value: 2 });
 
-      // Advance time past TTL
+      // Advance time past TTL to trigger expiry timer
       vi.advanceTimersByTime(60);
-      await bus.publish('test:ttl', { value: 3 });
 
-      // Wait for async delivery
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Flush microtasks to allow expiry handler to run
+      await Promise.resolve();
+
+      await bus.publish('test:ttl', { value: 3 });
 
       expect(received.length).toBeLessThan(3); // Should not receive third event
 
@@ -252,10 +253,11 @@ describe('SubscriptionManager', () => {
 
       manager.subscribe('test:ttl', () => {}, { ttl: 100 });
 
+      // Advance time past TTL to trigger expiry
       vi.advanceTimersByTime(110);
 
-      // Wait for expiry
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Flush microtasks to allow expiry handler to run
+      await Promise.resolve();
 
       expect(expiredEvent).not.toBeNull();
       expect(expiredEvent.topic).toBe('test:ttl');

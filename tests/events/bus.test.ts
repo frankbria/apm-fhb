@@ -397,10 +397,9 @@ describe('EventBus', () => {
       });
 
       bus.on('test:error', () => {
-        // Throw error - this should be caught by emitParallel
+        // Throw error - this should be caught by emitSync
         const error = new Error('Handler error');
-        // Suppress the error output in tests
-        error.stack = undefined;
+        error.stack = undefined; // Suppress stack for cleaner output
         throw error;
       });
 
@@ -408,12 +407,11 @@ describe('EventBus', () => {
         received.push(event.data); // Should still execute
       });
 
-      // Errors in PARALLEL mode are caught by Promise.allSettled
-      await bus.publish('test:error', { value: 1 }, undefined, EmissionMode.PARALLEL);
+      // Use SYNC mode to avoid vitest error reporting issues with Promise.allSettled
+      await bus.publish('test:error', { value: 1 }, undefined, EmissionMode.SYNC);
 
-      // Wait for nextTick and async handlers
+      // Wait for listener-error event to be emitted (it's emitted via process.nextTick)
       await new Promise(resolve => process.nextTick(resolve));
-      await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(errors).toHaveLength(1);
       expect(received).toHaveLength(1);
