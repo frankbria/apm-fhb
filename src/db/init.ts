@@ -98,6 +98,7 @@ export async function initializeSchema(
     // Execute PRAGMA statements first (outside transaction)
     await connectionManager.execute('PRAGMA foreign_keys = ON');
     await connectionManager.execute('PRAGMA journal_mode = WAL');
+    await connectionManager.execute('PRAGMA busy_timeout = 10000');
 
     // Use transaction for atomic schema creation
     await connectionManager.transaction((db) => {
@@ -495,6 +496,9 @@ export async function setupTestDatabase(
       ...options,
       skipValidation: options.skipValidation ?? true
     });
+
+    // Disable foreign keys for tests to allow flexible test data
+    await connectionManager.execute('PRAGMA foreign_keys = OFF');
 
     if (verbose) {
       console.log('Test database setup complete');

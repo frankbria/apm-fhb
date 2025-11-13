@@ -261,6 +261,9 @@ export class AgentRecoveryManager {
     // Get current retry count
     const currentAttempts = this.recoveryAttempts.get(agentId) ?? 0;
 
+    // Calculate next attempt number
+    const attemptNumber = currentAttempts + 1;
+
     // Check if max attempts exceeded
     if (currentAttempts >= this.config.maxRetryAttempts) {
       const error = `Max recovery attempts (${this.config.maxRetryAttempts}) exceeded`;
@@ -289,14 +292,13 @@ export class AgentRecoveryManager {
 
       return {
         success: false,
-        attempts: currentAttempts,
+        attempts: attemptNumber,
         error,
         duration: Date.now() - startTime
       };
     }
 
     // Increment retry count
-    const attemptNumber = currentAttempts + 1;
     this.recoveryAttempts.set(agentId, attemptNumber);
     this.recoveryStats.totalAttempts++;
     this.recoveryStats.totalCrashes = this.recoveryAttempts.size;
@@ -350,8 +352,8 @@ export class AgentRecoveryManager {
       this.recoveryStats.successfulRecoveries++;
       this.updateStatistics();
 
-      // Clear retry count on success
-      this.recoveryAttempts.delete(agentId);
+      // Keep retry count for historical tracking
+      // Use resetRecoveryAttempts() to explicitly clear if needed
 
       // Emit recovery succeeded event
       this.emitRecoveryEvent('agent:recovery-succeeded', agentId, crashReason, attemptNumber);

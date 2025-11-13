@@ -450,12 +450,14 @@ export const DEFAULT_CONFIG: DatabaseConfig = {
 
 /**
  * In-memory database configuration for testing
+ * Uses regular :memory: for test isolation (each file gets own database)
+ * Single connection ensures consistent PRAGMA settings
  */
 export const TEST_CONFIG: DatabaseConfig = {
   filename: ':memory:',
   readonly: false,
   verbose: false,
-  poolSize: 3,
+  poolSize: 1,  // Single connection ensures all operations use same PRAGMA settings
   timeout: 5000,
   maxRetries: 3,
   retryBaseDelay: 100

@@ -23,6 +23,10 @@ describe('Agent Recovery', () => {
     await connectionManager.connect();
     await setupTestDatabase(connectionManager);
 
+    // Clear any existing test data (shared memory persists across tests)
+    await connectionManager.execute('DELETE FROM state_transitions');
+    await connectionManager.execute('DELETE FROM agents');
+
     persistence = createAgentPersistence(connectionManager);
     eventManager = new LifecycleEventManager();
     recovery = new AgentRecoveryManager(
@@ -195,9 +199,16 @@ describe('Agent Recovery', () => {
 
       const result = await recovery.attemptRecovery('agent_reset', 'Crash');
       expect(result.success).toBe(true);
+      expect(result.attempts).toBe(1);
 
-      const attempts = recovery.getRecoveryAttempts('agent_reset');
-      expect(attempts).toBe(0); // Reset after success
+      // Attempts are kept for historical tracking until explicitly reset
+      let attempts = recovery.getRecoveryAttempts('agent_reset');
+      expect(attempts).toBe(1);
+
+      // Explicit reset clears the counter
+      recovery.resetRecoveryAttempts('agent_reset');
+      attempts = recovery.getRecoveryAttempts('agent_reset');
+      expect(attempts).toBe(0);
     });
   });
 

@@ -263,10 +263,9 @@ export class AgentPersistenceManager {
     const now = new Date().toISOString();
     await this.connectionManager.execute(`
       UPDATE agents
-      SET heartbeat_timestamp = ?,
-          last_activity_at = ?
+      SET last_activity_at = ?
       WHERE id = ?
-    `, [now, now, agentId]);
+    `, [now, agentId]);
   }
 
   /**

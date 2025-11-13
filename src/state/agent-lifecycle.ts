@@ -154,6 +154,29 @@ export function canTransition(
   agent: AgentState,
   toState: AgentStatus
 ): TransitionGuard {
+  // Special guard checks that need more specific error messages
+  // Check these before generic state machine validation
+
+  // Cannot return to Spawning after initialization
+  if (toState === AgentStatus.Spawning && agent.status !== null) {
+    return {
+      allowed: false,
+      reason: 'Agent cannot return to Spawning state after initialization'
+    };
+  }
+
+  // Terminated agents with crash cannot be reactivated
+  if (agent.status === AgentStatus.Terminated && toState === AgentStatus.Active) {
+    const metadata = agent.metadata as any;
+    const crashReason = metadata?.terminationReason;
+    if (crashReason === 'crash' || crashReason === 'error') {
+      return {
+        allowed: false,
+        reason: 'Agent is terminated due to crash/error and cannot be reactivated without recovery'
+      };
+    }
+  }
+
   // First, validate against state machine rules
   const validation = validateTransition(agent.status, toState);
   if (!validation.allowed) {
@@ -163,17 +186,6 @@ export function canTransition(
   // Additional precondition checks based on target state
   switch (toState) {
     case AgentStatus.Active:
-      // To transition to Active, agent must not be crashed without recovery
-      if (agent.status === AgentStatus.Terminated) {
-        const metadata = agent.metadata as any;
-        const crashReason = metadata?.terminationReason;
-        if (crashReason === 'crash' || crashReason === 'error') {
-          return {
-            allowed: false,
-            reason: 'Agent is terminated due to crash/error and cannot be reactivated without recovery'
-          };
-        }
-      }
 
       // To become Active from Idle, must have a task assignment
       if (agent.status === AgentStatus.Idle && !agent.currentTask) {
@@ -209,11 +221,8 @@ export function canTransition(
       break;
 
     case AgentStatus.Spawning:
-      // Should never transition back to Spawning after initial spawn
-      return {
-        allowed: false,
-        reason: 'Agent cannot return to Spawning state after initialization'
-      };
+      // Spawning transitions are handled by special guard check above
+      break;
   }
 
   return { allowed: true };
