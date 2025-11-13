@@ -1,0 +1,87 @@
+# APM Auto - Example Configuration File
+#
+# This file demonstrates all available configuration options.
+# Copy this file to:
+# - .apm-auto/config.yml (project-local config)
+# - ~/.apm-auto/config.yml (global user config)
+#
+# Configuration precedence (highest to lowest):
+# 1. Environment variables (APM_AUTO_*)
+# 2. Project-local config (.apm-auto/config.yml)
+# 3. Global user config (~/.apm-auto/config.yml)
+# 4. Built-in defaults
+
+# Autonomy Configuration
+# Controls agent behavior and approval requirements
+autonomy:
+  # Autonomy level: "Cautious" | "Automated" | "YOLO"
+  # - Cautious: Requires approval for all significant operations (safest)
+  # - Automated: Runs autonomously with minimal approvals
+  # - YOLO: Full automation with no approval gates (use with caution!)
+  level: "Cautious"
+
+  # Approval thresholds for different operation types
+  approvalThresholds:
+    # Maximum number of files that can be modified without approval
+    fileChanges: 5
+
+    # Whether git operations (commit, push, branch) require approval
+    gitOperations: true
+
+    # Whether database schema changes require approval
+    schemaChanges: true
+
+    # Whether external API calls require approval
+    externalAPICalls: true
+
+# Resource Configuration
+# Controls resource limits for concurrent operations
+resources:
+  # Maximum number of concurrent agents (1-100)
+  maxAgents: 10
+
+  # Maximum number of parallel git worktrees (1-50)
+  maxWorktrees: 20
+
+  # Maximum tokens per session before requiring user intervention (minimum 1000)
+  tokenBudget: 100000
+
+# Logging Configuration
+# Controls logging behavior and output destinations
+logging:
+  # Log level: "debug" | "info" | "warn" | "error"
+  level: "info"
+
+  # Optional file path for log output
+  # If not specified, only console logging is used
+  # Example: ".apm-auto/logs/apm-auto.log"
+  # filePath: ".apm-auto/logs/apm-auto.log"
+
+  # Whether to output logs to console
+  consoleOutput: true
+
+# Notification Configuration
+# Controls notification delivery for agent operations
+notifications:
+  # Whether notifications are enabled
+  enabled: false
+
+  # Notification channels to use
+  # Supported channels: "email", "slack", "webhook"
+  channels: []
+  # Example:
+  # channels:
+  #   - "email"
+  #   - "slack"
+
+# Database Configuration
+# Controls database location and backup behavior
+database:
+  # Path to SQLite database file
+  path: ".apm-auto/state.db"
+
+  # Whether automatic database backups are enabled
+  backupEnabled: true
+
+  # Backup interval in hours
+  backupInterval: 24
