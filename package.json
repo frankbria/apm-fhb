@@ -48,12 +48,14 @@
     "fs-extra": "^11.2.0",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
+    "uuid": "^13.0.0",
     "winston": "^3.18.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.10.1",
+    "@types/uuid": "^10.0.0",
     "@types/winston": "^2.4.4",
     "archiver": "^7.0.1",
     "typescript": "^5.9.3",
