@@ -427,8 +427,8 @@ describe('Migration Framework', () => {
 
   describe('MigrationRunner - Apply All', () => {
     it('should apply all pending migrations', async () => {
-      const migration1 = join(testMigrationsDir, '20240101120000_first.ts');
-      const migration2 = join(testMigrationsDir, '20240101130000_second.ts');
+      const migration1 = join(testMigrationsDir, '20240101120000_first.js');
+      const migration2 = join(testMigrationsDir, '20240101130000_second.js');
 
       writeFileSync(
         migration1,
@@ -473,9 +473,9 @@ describe('Migration Framework', () => {
     });
 
     it('should stop on first failure', async () => {
-      const migration1 = join(testMigrationsDir, '20240101120000_first.ts');
-      const migration2 = join(testMigrationsDir, '20240101130000_failing.ts');
-      const migration3 = join(testMigrationsDir, '20240101140000_third.ts');
+      const migration1 = join(testMigrationsDir, '20240101120000_first.js');
+      const migration2 = join(testMigrationsDir, '20240101130000_failing.js');
+      const migration3 = join(testMigrationsDir, '20240101140000_third.js');
 
       writeFileSync(
         migration1,
@@ -535,10 +535,10 @@ describe('Migration Framework', () => {
       await connectionManager.execute('CREATE TABLE table2 (id INTEGER PRIMARY KEY)');
       await connectionManager.execute('CREATE TABLE table3 (id INTEGER PRIMARY KEY)');
 
-      // Create migration files
-      const migration1 = join(testMigrationsDir, '20240101120000_first.ts');
-      const migration2 = join(testMigrationsDir, '20240101130000_second.ts');
-      const migration3 = join(testMigrationsDir, '20240101140000_third.ts');
+      // Create migration files with unique timestamps to avoid module caching issues
+      const migration1 = join(testMigrationsDir, '20240101150000_rollback_first.js');
+      const migration2 = join(testMigrationsDir, '20240101160000_rollback_second.js');
+      const migration3 = join(testMigrationsDir, '20240101170000_rollback_third.js');
 
       writeFileSync(
         migration1,
@@ -572,16 +572,16 @@ describe('Migration Framework', () => {
 
       const runner = new MigrationRunner(connectionManager, testMigrationsDir);
       const appliedMigrations = [
-        '20240101120000_first',
-        '20240101130000_second',
-        '20240101140000_third'
+        '20240101150000_rollback_first',
+        '20240101160000_rollback_second',
+        '20240101170000_rollback_third'
       ];
 
       const results = await runner.rollbackLast(appliedMigrations, 2);
 
       expect(results).toHaveLength(2);
-      expect(results[0].name).toBe('20240101140000_third');
-      expect(results[1].name).toBe('20240101130000_second');
+      expect(results[0].name).toBe('20240101170000_rollback_third');
+      expect(results[1].name).toBe('20240101160000_rollback_second');
       expect(results[0].success).toBe(true);
       expect(results[1].success).toBe(true);
 

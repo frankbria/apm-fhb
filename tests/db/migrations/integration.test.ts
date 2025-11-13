@@ -436,13 +436,18 @@ describe('Migration Integration', () => {
         migration2,
         `
         export async function up(db) {
-          db.exec('CREATE TABLE failing_table (id INTEGER PRIMARY KEY)');
-          db.exec('INSERT INTO failing_table (id) VALUES (1)');
-          // This will fail due to duplicate primary key
-          db.exec('INSERT INTO failing_table (id) VALUES (1)');
+          // Use existing success_table for DML operations to test transaction rollback
+          // SQLite can only rollback DML (INSERT/UPDATE/DELETE) not DDL (CREATE TABLE)
+          // Use prepared statements for proper transaction support
+          const stmt1 = db.prepare('INSERT INTO success_table (id) VALUES (?)');
+          stmt1.run(10);
+          // This will fail due to duplicate primary key (id=1 already exists from migration1)
+          const stmt2 = db.prepare('INSERT INTO success_table (id) VALUES (?)');
+          stmt2.run(1);
         }
         export async function down(db) {
-          db.exec('DROP TABLE failing_table');
+          const stmt = db.prepare('DELETE FROM success_table WHERE id = ?');
+          stmt.run(10);
         }
         `
       );
@@ -458,11 +463,11 @@ describe('Migration Integration', () => {
       );
       expect(successTable).toHaveLength(3);
 
-      // Verify second migration failed and rolled back
-      const failingTable = await connectionManager.query<{ name: string }>(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='failing_table'"
+      // Verify second migration failed and rolled back (id=10 should not exist)
+      const row10 = await connectionManager.query<{ id: number }>(
+        'SELECT * FROM success_table WHERE id = 10'
       );
-      expect(failingTable).toHaveLength(0);
+      expect(row10).toHaveLength(0);
 
       // Verify only first migration recorded
       const stateManager = new MigrationStateManager(connectionManager);

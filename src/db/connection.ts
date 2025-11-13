@@ -257,17 +257,17 @@ export class ConnectionManager extends EventEmitter {
    * Execute a transaction
    */
   async transaction<T>(
-    operations: (db: Database.Database) => T,
+    operations: (db: Database.Database) => T | Promise<T>,
     options: TransactionOptions = {}
   ): Promise<T> {
     const mode = options.mode ?? 'DEFERRED';
 
-    return this.withConnection((db) => {
+    return this.withConnection(async (db) => {
       // Begin transaction
       db.exec(`BEGIN ${mode}`);
 
       try {
-        const result = operations(db);
+        const result = await operations(db);
         db.exec('COMMIT');
         return result;
       } catch (error) {
